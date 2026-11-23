@@ -174,20 +174,6 @@ flowchart LR
 
 测试覆盖主题偏好映射、API 响应解包与分页起点、ViewModel 状态、WebView URL 策略，以及个人中心主题选择交互。
 
-## 常见问题
-
-### Gradle 找不到 Android SDK
-
-确认 `local.properties` 中的 `sdk.dir` 指向有效 SDK，或设置 `ANDROID_HOME`。`local.properties` 包含本机路径，已由 `.gitignore` 排除。
-
-### 文章长时间白屏
-
-阅读器会立即展示加载状态；12 秒仍未显示内容时会提供继续等待、重新加载和外部浏览器入口。HTTP、SSL、渲染进程异常也会显示可恢复的错误页。
-
-### 真机 Compose 测试一直等待
-
-部分厂商系统会让 Compose 测试框架长时间等待空闲状态。请先解锁设备、关闭系统弹窗并保持屏幕常亮；CI 建议使用接近 AOSP 的 API 24+ 模拟器。
-
 ## 致谢
 
 - [WanAndroid](https://www.wanandroid.com/) 提供开放 API 与内容服务。
