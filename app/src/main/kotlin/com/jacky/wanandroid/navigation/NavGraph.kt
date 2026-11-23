@@ -6,6 +6,8 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
@@ -28,10 +30,16 @@ private val topLevels = listOf(
     TopLevel("我的", "Profile", Profile, Icons.Rounded.Person)
 )
 
+private fun String.toReaderTitle(): String = runCatching {
+    AnnotatedString.fromHtml(this).text.trim()
+}.getOrElse {
+    replace(Regex("<[^>]+>"), "").trim()
+}
+
 @Composable fun WanAndroidApp(navController: NavHostController = rememberNavController()) {
     val entry by navController.currentBackStackEntryAsState(); val route = entry?.destination?.route.orEmpty()
     val showBottom = topLevels.any { route.endsWith(".${it.marker}") || route == it.marker }
-    val openArticle: (Article) -> Unit = { navController.navigate(WebArticle(it.title, it.link, it.id)) }
+    val openArticle: (Article) -> Unit = { navController.navigate(WebArticle(it.title.toReaderTitle(), it.link, it.id)) }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, bottomBar = { if (showBottom) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) { topLevels.forEach { item ->
         val selected = route.endsWith(".${item.marker}") || route == item.marker
         NavigationBarItem(selected = selected, onClick = { navController.navigate(item.destination) { popUpTo(Home) { saveState = true }; launchSingleTop = true; restoreState = true } }, icon = { Icon(item.icon, contentDescription = null) }, label = { Text(item.label, style = MaterialTheme.typography.labelSmall) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer, selectedTextColor = MaterialTheme.colorScheme.onBackground, indicatorColor = MaterialTheme.colorScheme.primaryContainer, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant))

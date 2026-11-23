@@ -12,11 +12,15 @@ import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jacky.wanandroid.domain.model.Article
@@ -65,7 +69,8 @@ fun WanArticleCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCollect: (() -> Unit)? = null,
-    collectLabel: String = if (article.collected) "取消收藏" else "收藏"
+    collectLabel: String = if (article.collected) "取消收藏" else "收藏",
+    richTitle: Boolean = false
 ) {
     val signal = when { article.top -> CompileAmber; article.fresh -> MaterialTheme.colorScheme.primary; else -> MaterialTheme.colorScheme.outlineVariant }
     Surface(
@@ -88,7 +93,11 @@ fun WanArticleCard(
                     }
                 }
                 Spacer(Modifier.height(7.dp))
-                Text(article.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val highlightColor = MaterialTheme.colorScheme.primary
+                val displayTitle = remember(article.title, richTitle, highlightColor) {
+                    if (richTitle) article.title.toRichTitle(highlightColor) else AnnotatedString(article.title)
+                }
+                Text(displayTitle, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.author.isNotBlank()) {
                     Spacer(Modifier.height(9.dp))
                     Text("BY ${article.author}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -101,6 +110,18 @@ fun WanArticleCard(
             }
         }
     }
+}
+
+private val highlightOpenTag = Regex("<em\\b[^>]*>", RegexOption.IGNORE_CASE)
+private val highlightCloseTag = Regex("</em\\s*>", RegexOption.IGNORE_CASE)
+
+private fun String.toRichTitle(highlightColor: Color): AnnotatedString = runCatching {
+    val rgb = (highlightColor.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')
+    val themedHtml = replace(highlightOpenTag, "<font color=\"#$rgb\"><b>")
+        .replace(highlightCloseTag, "</b></font>")
+    AnnotatedString.fromHtml(themedHtml)
+}.getOrElse {
+    AnnotatedString(this)
 }
 
 @Composable
