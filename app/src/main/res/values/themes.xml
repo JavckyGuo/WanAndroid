@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch/window theme only. Actual UI colors come from Compose MaterialTheme.
+         Framework parent => no androidx.appcompat dependency required. -->
+    <style name="Theme.WanAndroid" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
