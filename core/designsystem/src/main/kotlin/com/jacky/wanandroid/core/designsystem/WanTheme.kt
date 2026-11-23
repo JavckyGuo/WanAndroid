@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/** Signal Desk 视觉体系使用的共享品牌色。 */
 val SignalCyan = Color(0xFF00A39A)
 val CompileAmber = Color(0xFFF2B134)
 val Ink = Color(0xFF101828)
@@ -75,11 +76,15 @@ private val WanTypography = Typography(
     labelSmall = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium, fontSize = 10.sp, lineHeight = 14.sp, letterSpacing = 0.8.sp)
 )
 
+/** 向全应用提供固定的浅色/深色色板与排版，不启用动态色。 */
 @Composable
-fun WanTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun WanTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = WanTypography,
-        content = content
+        content = content,
     )
 }

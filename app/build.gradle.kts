@@ -1,6 +1,7 @@
+// 应用壳负责组装全部 Feature、类型安全导航、Compose 与 Hilt 入口。
 plugins {
     alias(libs.plugins.android.application)
-    // kotlin-android intentionally not applied; AGP 9.0+ has built-in Kotlin support.
+    // AGP 9 已内置 Kotlin，不再重复应用 kotlin-android 插件。
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)

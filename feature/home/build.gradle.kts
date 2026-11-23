@@ -1,6 +1,7 @@
+// 首页 Feature 聚合 Banner、缓存文章流和收藏交互。
 plugins {
     alias(libs.plugins.android.library)
-    // kotlin-android intentionally not applied; AGP 9.0+ has built-in Kotlin support.
+    // AGP 9 已内置 Kotlin，不再重复应用 kotlin-android 插件。
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
@@ -46,7 +47,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.arch.core.testing)
-    // MainDispatcherRule/FakeDispatcherProvider live in :core's testFixtures source set
+    // MainDispatcherRule 与 FakeDispatcherProvider 来自 :core 的 Test Fixtures。
     // (see core/build.gradle.kts) since a module's plain src/test/ is not visible to
     // other modules' tests.
     testImplementation(testFixtures(project(":core")))

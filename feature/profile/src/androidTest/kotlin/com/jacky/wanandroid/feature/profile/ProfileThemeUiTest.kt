@@ -12,10 +12,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+/** 验证未登录用户仍能打开主题弹层并选择深色模式。 */
 class ProfileThemeUiTest {
-    @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+    @get:Rule
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun loggedOutUserCanOpenThemeSelectorAndChooseDark() {
+    @Test
+    fun loggedOutUserCanOpenThemeSelectorAndChooseDark() {
         var selected = ThemeMode.SYSTEM
         composeRule.setContent {
             var showSheet by remember { mutableStateOf(false) }
@@ -24,10 +27,22 @@ class ProfileThemeUiTest {
             WanTheme(darkTheme = mode == ThemeMode.DARK) {
                 ProfileContent(
                     state = ProfileUiState(themeMode = mode),
-                    onLogin = {}, onCollections = {}, onThemeClick = { showSheet = true },
-                    onRetry = {}, onLogout = {}
+                    onLogin = {},
+                    onCollections = {},
+                    onThemeClick = { showSheet = true },
+                    onRetry = {},
+                    onLogout = {},
                 )
-                if (showSheet) ThemeModeSheet(mode, { mode = it; showSheet = false }, { showSheet = false })
+                if (showSheet) {
+                    ThemeModeSheet(
+                        selected = mode,
+                        onSelect = {
+                            mode = it
+                            showSheet = false
+                        },
+                        onDismiss = { showSheet = false },
+                    )
+                }
             }
         }
 

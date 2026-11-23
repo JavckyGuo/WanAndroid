@@ -24,13 +24,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+/** 导航分组的加载状态。 */
 data class NavigationUiState(val loading: Boolean = true, val groups: List<NavigationGroup> = emptyList(), val error: String? = null)
+/** 获取站点导航并将异常转换为可重试页面状态。 */
 @HiltViewModel class NavigationViewModel @Inject constructor(private val load: LoadNavigationUseCase, dispatchers: com.jacky.wanandroid.core.DispatcherProvider) : BaseViewModel(dispatchers) {
-    private val _state = MutableStateFlow(NavigationUiState()); val state = _state.asStateFlow()
-    init { refresh() }; fun refresh() = launchOnIO { _state.update { it.copy(loading = true) }; load(NoParams)
+    private val _state = MutableStateFlow(NavigationUiState())
+    val state = _state.asStateFlow()
+
+    init {
+        refresh()
+    }
+
+    fun refresh() = launchOnIO {
+        _state.update { it.copy(loading = true) }
+        load(NoParams)
         .onSuccess { value -> _state.value = NavigationUiState(false, value) }
         .onFailure { e -> _state.value = NavigationUiState(false, error = e.message ?: "加载失败") } }
 }
+/** 按服务端分组展示快捷文章入口。 */
 @Composable fun NavigationScreen(onOpenArticle: (Article) -> Unit, viewModel: NavigationViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle(); Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { WanPageHeader("快捷导航", "DISCOVERY · DIRECTORY") }) { padding ->
         when { state.loading -> WanStatusPane("正在索引站点", Modifier.padding(padding), loading = true); state.error != null -> WanStatusPane(state.error!!, Modifier.padding(padding), actionLabel = "重试", onAction = viewModel::refresh)

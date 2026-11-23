@@ -27,17 +27,31 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+/** 搜索关键词、历史记录、热词及结果分页的统一页面状态。 */
 data class SearchUiState(
     val query: String = "", val searching: Boolean = false, val hotKeys: List<HotKey> = emptyList(),
     val history: List<String> = emptyList(), val results: List<Article> = emptyList(), val page: Int = 0,
     val hasMore: Boolean = false, val error: String? = null
 )
+/** 协调热词、搜索历史与从第 0 页开始的搜索结果。 */
 @HiltViewModel class SearchViewModel @Inject constructor(
     private val search: SearchArticlesUseCase, private val discovery: DiscoveryRepository,
     dispatchers: com.jacky.wanandroid.core.DispatcherProvider
 ) : BaseViewModel(dispatchers) {
-    private val _state = MutableStateFlow(SearchUiState()); val state = _state.asStateFlow()
-    init { launchOnIO { runCatching { discovery.hotKeys() }.onSuccess { value -> _state.update { it.copy(hotKeys = value) } } }; launchOnIO { discovery.searchHistory().collect { value -> _state.update { it.copy(history = value) } } } }
+    private val _state = MutableStateFlow(SearchUiState())
+    val state = _state.asStateFlow()
+
+    init {
+        launchOnIO {
+            runCatching { discovery.hotKeys() }
+                .onSuccess { value -> _state.update { it.copy(hotKeys = value) } }
+        }
+        launchOnIO {
+            discovery.searchHistory().collect { value ->
+                _state.update { it.copy(history = value) }
+            }
+        }
+    }
     fun setQuery(value: String) = _state.update { it.copy(query = value) }
     fun submit(value: String = _state.value.query, append: Boolean = false) { val keyword = value.trim(); if (keyword.isBlank()) return
         _state.update { it.copy(query = keyword, searching = true, error = null) }; val page = if (append) _state.value.page + 1 else 0
@@ -47,6 +61,7 @@ data class SearchUiState(
     }
     fun clearHistory() = launchOnIO { discovery.clearSearchHistory() }
 }
+/** 搜索页；结果标题保留服务端 HTML 富文本样式。 */
 @Composable fun SearchScreen(onBack: () -> Unit, onOpenArticle: (Article) -> Unit, viewModel: SearchViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle(); Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { WanPageHeader("全站搜索", "QUERY · KNOWLEDGE", navigation = { WanBackButton(onBack) }) }) { padding -> Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
         OutlinedTextField(value = state.query, onValueChange = viewModel::setQuery, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = androidx.compose.foundation.shape.CutCornerShape(topEnd = 16.dp), placeholder = { Text("输入关键词，空格可分隔") }, trailingIcon = { FilledTonalButton(onClick = { viewModel.submit() }) { Text("搜索") } }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { viewModel.submit() }))

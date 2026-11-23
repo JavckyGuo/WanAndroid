@@ -1,6 +1,7 @@
+// Core 模块提供调度器、基础 ViewModel、日志及跨模块测试夹具。
 plugins {
     alias(libs.plugins.android.library)
-    // kotlin-android intentionally not applied; AGP 9.0+ has built-in Kotlin support.
+    // AGP 9 已内置 Kotlin，不再重复应用 kotlin-android 插件。
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -13,13 +14,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    // MainDispatcherRule/FakeDispatcherProvider need to be visible to OTHER modules'
-    // test source sets (e.g. :feature:home's tests). A module's plain src/test/ is
-    // private to that module's own test compilation -- other modules depending on
-    // :core only see its main source set, never its test source set, so
-    // `testImplementation(project(":core"))` alone leaves "Unresolved reference"
-    // errors on these classes. AGP's testFixtures source set is the supported way
-    // to share test-only code across module boundaries.
+    // Test Fixtures 将 MainDispatcherRule 等测试基础设施安全共享给 Feature 测试。
     testFixtures { enable = true }
 }
 

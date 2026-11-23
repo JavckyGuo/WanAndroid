@@ -1,3 +1,4 @@
+// 知识体系 Feature 展示分类树与分类文章分页。
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jacky.wanandroid.domain.model.Article
 
+/** 全站统一的标题栏，支持可选导航和操作区域。 */
 @Composable
 fun WanPageHeader(
     title: String,
@@ -63,6 +64,7 @@ fun WanSectionLabel(index: String, title: String, trailing: String? = null, modi
     }
 }
 
+/** 文章列表共享卡片；搜索结果可选择解析标题中的 HTML 样式。 */
 @Composable
 fun WanArticleCard(
     article: Article,
@@ -72,7 +74,11 @@ fun WanArticleCard(
     collectLabel: String = if (article.collected) "取消收藏" else "收藏",
     richTitle: Boolean = false
 ) {
-    val signal = when { article.top -> CompileAmber; article.fresh -> MaterialTheme.colorScheme.primary; else -> MaterialTheme.colorScheme.outlineVariant }
+    val signal = when {
+        article.top -> CompileAmber
+        article.fresh -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.outlineVariant
+    }
     Surface(
         modifier = modifier.fillMaxWidth().clip(CutCornerShape(topEnd = 18.dp)).clickable(role = Role.Button, onClick = onClick),
         shape = CutCornerShape(topEnd = 18.dp),
@@ -85,7 +91,14 @@ fun WanArticleCard(
             }
             Column(Modifier.weight(1f).padding(start = 15.dp, top = 15.dp, bottom = 15.dp, end = if (onCollect == null) 16.dp else 4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val status = when { article.top -> "TOP"; article.fresh -> "NEW"; else -> article.superChapterName.ifBlank { article.chapterName }.uppercase().take(18) }
+                    val status = when {
+                        article.top -> "TOP"
+                        article.fresh -> "NEW"
+                        else -> article.superChapterName
+                            .ifBlank { article.chapterName }
+                            .uppercase()
+                            .take(18)
+                    }
                     if (status.isNotBlank()) Text(status, style = MaterialTheme.typography.labelSmall, color = if (article.top) CompileAmber else MaterialTheme.colorScheme.primary)
                     if (article.niceDate.isNotBlank()) {
                         Spacer(Modifier.weight(1f))
@@ -115,6 +128,7 @@ fun WanArticleCard(
 private val highlightOpenTag = Regex("<em\\b[^>]*>", RegexOption.IGNORE_CASE)
 private val highlightCloseTag = Regex("</em\\s*>", RegexOption.IGNORE_CASE)
 
+/** 安全解析接口返回的富文本标题，解析失败时退回原始纯文本。 */
 private fun String.toRichTitle(highlightColor: Color): AnnotatedString = runCatching {
     val rgb = (highlightColor.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')
     val themedHtml = replace(highlightOpenTag, "<font color=\"#$rgb\"><b>")
@@ -124,6 +138,7 @@ private fun String.toRichTitle(highlightColor: Color): AnnotatedString = runCatc
     AnnotatedString(this)
 }
 
+/** 页面加载、空内容和错误状态的统一占位视图。 */
 @Composable
 fun WanStatusPane(
     message: String,

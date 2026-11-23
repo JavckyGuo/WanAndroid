@@ -36,25 +36,36 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+/** 首页聚合内容、分页进度与缓存来源状态。 */
 data class HomeUiState(
     val isLoading: Boolean = true, val isLoadingMore: Boolean = false,
     val banners: List<Banner> = emptyList(), val articles: List<Article> = emptyList(),
     val page: Int = 0, val hasMore: Boolean = true, val fromCache: Boolean = false,
     val errorMessage: String? = null
 )
-sealed interface HomeUiEvent { data class Message(val value: String) : HomeUiEvent; data object RequestLogin : HomeUiEvent }
+/** 首页需要消费一次的提示或登录跳转事件。 */
+sealed interface HomeUiEvent {
+    data class Message(val value: String) : HomeUiEvent
+    data object RequestLogin : HomeUiEvent
+}
 
+/** 协调首页刷新、加载更多及收藏状态同步。 */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val loadHome: LoadHomeUseCase,
     private val collectionRepository: CollectionRepository,
     dispatchers: com.jacky.wanandroid.core.DispatcherProvider
 ) : BaseViewModel(dispatchers) {
-    private val _uiState = MutableStateFlow(HomeUiState()); val uiState = _uiState.asStateFlow()
-    private val events = Channel<HomeUiEvent>(); val uiEvent = events.receiveAsFlow()
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState = _uiState.asStateFlow()
+    private val events = Channel<HomeUiEvent>()
+    val uiEvent = events.receiveAsFlow()
     init { refresh() }
     fun refresh() = load(0, false)
-    fun loadMore() { val state = _uiState.value; if (!state.isLoadingMore && state.hasMore) load(state.page + 1, true) }
+    fun loadMore() {
+        val state = _uiState.value
+        if (!state.isLoadingMore && state.hasMore) load(state.page + 1, true)
+    }
     fun toggleCollection(articleId: Long, collected: Boolean) = launchOnIO {
         runCatching { if (collected) collectionRepository.uncollect(articleId) else collectionRepository.collect(articleId) }
             .onSuccess { _uiState.update { state -> state.copy(articles = state.articles.map { if (it.id == articleId) it.copy(collected = !collected) else it }) } }
@@ -70,9 +81,11 @@ class HomeViewModel @Inject constructor(
     }
 }
 
+/** 展示 Banner、缓存提示和可分页的文章流。 */
 @Composable
 fun HomeScreen(onSearch: () -> Unit, onLogin: () -> Unit, onOpenArticle: (Article) -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle(); val snackbar = remember { SnackbarHostState() }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) { viewModel.uiEvent.collect { if (it is HomeUiEvent.RequestLogin) onLogin() else snackbar.showSnackbar((it as HomeUiEvent.Message).value) } }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         WanPageHeader(title = "WanAndroid", kicker = "DAILY · ANDROID SIGNAL", action = {

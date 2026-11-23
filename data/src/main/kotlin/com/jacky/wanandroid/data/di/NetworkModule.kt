@@ -15,21 +15,25 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+/** 组装 WanAndroid 网络栈及统一 JSON 解析器。 */
 object NetworkModule {
 
-    @Provides @Singleton
+    @Provides
+    @Singleton
     fun provideOkHttpClient(cookieJar: EncryptedCookieJar): OkHttpClient = OkHttpClient.Builder()
         .cookieJar(cookieJar)
         .addInterceptor(HttpLoggingInterceptor().apply {
-            // BASIC deliberately omits form bodies so login passwords never enter Logcat.
+            // BASIC 不记录表单正文，避免登录密码进入 Logcat。
             level = HttpLoggingInterceptor.Level.BASIC
         })
         .build()
 
-    @Provides @Singleton
+    @Provides
+    @Singleton
     fun provideGson(): Gson = Gson()
 
-    @Provides @Singleton
+    @Provides
+    @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit =
         Retrofit.Builder()
             .baseUrl("https://wanandroid.com/")
@@ -37,6 +41,7 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
 
-    @Provides @Singleton
+    @Provides
+    @Singleton
     fun provideWanApi(retrofit: Retrofit): WanApi = retrofit.create(WanApi::class.java)
 }

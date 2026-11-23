@@ -12,13 +12,18 @@ import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
+/** 验证应用根主题能够实时响应仓库中的外部偏好变化。 */
 class ThemeViewModelTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
-    @Test fun `root theme follows repository changes`() = runTest {
+    @Test
+    fun `root theme follows repository changes`() = runTest {
+        // 准备可主动发射主题变化的内存仓库。
         val repository = FakeSettingsRepository()
         val viewModel = ThemeViewModel(ObserveThemeModeUseCase(repository))
 
+        // 验证根状态依次跟随系统、深色和浅色偏好。
         assertEquals(ThemeMode.SYSTEM, viewModel.themeMode.value)
         repository.setThemeMode(ThemeMode.DARK)
         assertEquals(ThemeMode.DARK, viewModel.themeMode.value)
@@ -30,5 +35,7 @@ class ThemeViewModelTest {
 private class FakeSettingsRepository : SettingsRepository {
     private val state = MutableStateFlow(ThemeMode.SYSTEM)
     override val themeMode = state
-    override suspend fun setThemeMode(mode: ThemeMode) { state.value = mode }
+    override suspend fun setThemeMode(mode: ThemeMode) {
+        state.value = mode
+    }
 }

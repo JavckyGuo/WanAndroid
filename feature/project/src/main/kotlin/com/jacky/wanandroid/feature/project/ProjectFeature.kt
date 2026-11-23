@@ -28,26 +28,40 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+/** 项目分类选择与项目文章分页状态；项目接口从第 1 页开始。 */
 data class ProjectUiState(
     val loading: Boolean = true, val categories: List<ProjectCategory> = emptyList(), val selected: ProjectCategory? = null,
     val projects: List<Article> = emptyList(), val page: Int = 1, val hasMore: Boolean = false, val error: String? = null
 )
+/** 加载项目分类，并维护每个分类下的项目分页。 */
 @HiltViewModel class ProjectViewModel @Inject constructor(
     private val loadCategories: LoadProjectCategoriesUseCase, private val loadProjects: LoadProjectArticlesUseCase,
     dispatchers: com.jacky.wanandroid.core.DispatcherProvider
 ) : BaseViewModel(dispatchers) {
-    private val _state = MutableStateFlow(ProjectUiState()); val state = _state.asStateFlow()
-    init { refresh() }
+    private val _state = MutableStateFlow(ProjectUiState())
+    val state = _state.asStateFlow()
+
+    init {
+        refresh()
+    }
     fun refresh() = launchOnIO { _state.update { it.copy(loading = true) }; loadCategories(NoParams).onSuccess { list ->
         _state.update { it.copy(categories = list, loading = false) }; list.firstOrNull()?.let(::select)
     }.onFailure { e -> _state.update { it.copy(loading = false, error = e.message) } } }
-    fun select(value: ProjectCategory) { _state.update { it.copy(selected = value, projects = emptyList(), page = 1) }; loadPage(1, false) }
-    fun loadMore() { val s = _state.value; if (s.hasMore) loadPage(s.page + 1, true) }
+    fun select(value: ProjectCategory) {
+        _state.update { it.copy(selected = value, projects = emptyList(), page = 1) }
+        loadPage(1, false)
+    }
+
+    fun loadMore() {
+        val current = _state.value
+        if (current.hasMore) loadPage(current.page + 1, true)
+    }
     private fun loadPage(page: Int, append: Boolean) = launchOnIO { val id = _state.value.selected?.id ?: return@launchOnIO
         loadProjects(CategoryPageParams(id, page)).onSuccess { result -> _state.update { old -> old.copy(
             projects = if (append) old.projects + result.items else result.items, page = page, hasMore = result.hasMore, error = null
         ) } }.onFailure { e -> _state.update { it.copy(error = e.message) } } }
     }
+/** 使用分类标签和图文卡片展示开源项目。 */
 @Composable fun ProjectScreen(onOpenArticle: (Article) -> Unit, viewModel: ProjectViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle(); Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { WanPageHeader("开源项目", "BUILD · SHOWCASE") }) { padding -> Column(Modifier.fillMaxSize().padding(padding)) {
         LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(state.categories, key = { it.id }) { item -> FilterChip(selected = item.id == state.selected?.id, onClick = { viewModel.select(item) }, label = { Text(item.name) }, shape = androidx.compose.foundation.shape.CutCornerShape(topEnd = 12.dp)) } }

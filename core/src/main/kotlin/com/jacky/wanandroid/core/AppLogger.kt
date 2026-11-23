@@ -2,6 +2,11 @@ package com.jacky.wanandroid.core
 
 import android.util.Log
 
+/**
+ * 应用统一日志入口，集中约束日志标签与异常输出方式。
+ *
+ * 业务代码通过该对象记录诊断信息，避免直接散落调用 Android [Log]。
+ */
 object AppLogger {
     private const val TAG = "AppLogger"
 

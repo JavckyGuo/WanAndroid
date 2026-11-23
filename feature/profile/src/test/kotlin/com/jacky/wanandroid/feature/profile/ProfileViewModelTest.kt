@@ -20,17 +20,20 @@ import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
+/** 验证未登录场景下主题设置仍可观察并立即更新。 */
 class ProfileViewModelTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
-    @Test fun `theme remains available while logged out and updates immediately`() = runTest {
+    @Test
+    fun `theme remains available while logged out and updates immediately`() = runTest {
         val settings = FakeSettingsRepository()
         val viewModel = ProfileViewModel(
             auth = FakeAuthRepository(),
             loadDashboard = LoadDashboardUseCase(FakeUserRepository()),
             observeThemeMode = ObserveThemeModeUseCase(settings),
             setThemeMode = SetThemeModeUseCase(settings),
-            dispatchers = FakeDispatcherProvider()
+            dispatchers = FakeDispatcherProvider(),
         )
 
         assertEquals(false, viewModel.state.value.loggedIn)
@@ -43,14 +46,18 @@ class ProfileViewModelTest {
 private class FakeSettingsRepository : SettingsRepository {
     private val state = MutableStateFlow(ThemeMode.SYSTEM)
     override val themeMode = state
-    override suspend fun setThemeMode(mode: ThemeMode) { state.value = mode }
+    override suspend fun setThemeMode(mode: ThemeMode) {
+        state.value = mode
+    }
 }
 
 private class FakeAuthRepository : AuthRepository {
     override val isLoggedIn = MutableStateFlow(false)
     override suspend fun login(username: String, password: String) = UserProfile(1, username)
     override suspend fun register(username: String, password: String, repeatedPassword: String) = UserProfile(1, username)
-    override suspend fun logout() { isLoggedIn.value = false }
+    override suspend fun logout() {
+        isLoggedIn.value = false
+    }
 }
 
 private class FakeUserRepository : UserRepository {

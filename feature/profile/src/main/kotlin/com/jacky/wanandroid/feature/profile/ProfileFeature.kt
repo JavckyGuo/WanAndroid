@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+/** 个人中心的账号概览、积分数据与设备主题设置。 */
 data class ProfileUiState(
     val loggedIn: Boolean = false,
     val loading: Boolean = false,
@@ -48,11 +49,13 @@ data class ProfileUiState(
     val error: String? = null
 )
 
+/** 个人中心发给导航或 Snackbar 的一次性事件。 */
 sealed interface ProfileEvent {
     data object LoggedOut : ProfileEvent
     data class Message(val value: String) : ProfileEvent
 }
 
+/** 同时观察登录态和主题设置，并处理退出登录及主题切换。 */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val auth: AuthRepository,
@@ -96,6 +99,7 @@ class ProfileViewModel @Inject constructor(
     }
 }
 
+/** 个人中心入口，负责连接 ViewModel 状态和页面事件。 */
 @Composable
 fun ProfileScreen(
     onLogin: () -> Unit,
@@ -131,12 +135,16 @@ fun ProfileScreen(
     if (showThemeSheet) {
         ThemeModeSheet(
             selected = state.themeMode,
-            onSelect = { mode -> viewModel.selectTheme(mode); showThemeSheet = false },
+            onSelect = { mode ->
+                viewModel.selectTheme(mode)
+                showThemeSheet = false
+            },
             onDismiss = { showThemeSheet = false }
         )
     }
 }
 
+/** 可独立测试的个人中心内容，未登录时仍保留通用设置。 */
 @Composable
 internal fun ProfileContent(
     state: ProfileUiState,
@@ -313,6 +321,7 @@ private fun ProfileActionRow(
     }
 }
 
+/** 主题模式单选底部弹层；关闭弹层不会修改当前设置。 */
 @Composable
 internal fun ThemeModeSheet(selected: ThemeMode, onSelect: (ThemeMode) -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {

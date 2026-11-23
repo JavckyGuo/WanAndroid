@@ -21,28 +21,42 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+/** 知识体系分类选择及其文章分页状态。 */
 data class KnowledgeUiState(
     val loading: Boolean = true, val categories: List<Category> = emptyList(),
     val selected: Category? = null, val articles: List<Article> = emptyList(),
     val page: Int = 0, val hasMore: Boolean = false, val error: String? = null
 )
+/** 先加载分类树，再按选中的二级分类加载从 0 开始的文章页。 */
 @HiltViewModel class KnowledgeViewModel @Inject constructor(
     private val loadCategories: LoadCategoriesUseCase, private val loadArticles: LoadCategoryArticlesUseCase,
     dispatchers: com.jacky.wanandroid.core.DispatcherProvider
 ) : BaseViewModel(dispatchers) {
-    private val _state = MutableStateFlow(KnowledgeUiState()); val state = _state.asStateFlow()
-    init { refresh() }
+    private val _state = MutableStateFlow(KnowledgeUiState())
+    val state = _state.asStateFlow()
+
+    init {
+        refresh()
+    }
     fun refresh() = launchOnIO { _state.update { it.copy(loading = true, error = null) }; loadCategories(NoParams)
         .onSuccess { list -> _state.update { it.copy(loading = false, categories = list) }; list.firstOrNull()?.children?.firstOrNull()?.let(::select) }
         .onFailure { e -> _state.update { it.copy(loading = false, error = e.message) } } }
-    fun select(category: Category) { _state.update { it.copy(selected = category, articles = emptyList(), page = 0) }; loadPage(0, false) }
-    fun loadMore() { val s = _state.value; if (s.hasMore) loadPage(s.page + 1, true) }
+    fun select(category: Category) {
+        _state.update { it.copy(selected = category, articles = emptyList(), page = 0) }
+        loadPage(0, false)
+    }
+
+    fun loadMore() {
+        val current = _state.value
+        if (current.hasMore) loadPage(current.page + 1, true)
+    }
     private fun loadPage(page: Int, append: Boolean) = launchOnIO { val id = _state.value.selected?.id ?: return@launchOnIO
         loadArticles(CategoryPageParams(id, page)).onSuccess { result -> _state.update { old -> old.copy(
             articles = if (append) old.articles + result.items else result.items, page = page, hasMore = result.hasMore, error = null
         ) } }.onFailure { e -> _state.update { it.copy(error = e.message) } } }
 }
 
+/** 左侧分类树与右侧文章列表组成的知识体系页面。 */
 @Composable fun KnowledgeScreen(onOpenArticle: (Article) -> Unit, viewModel: KnowledgeViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { WanPageHeader(state.selected?.name ?: "知识体系", "KNOWLEDGE · MAP") }) { padding ->

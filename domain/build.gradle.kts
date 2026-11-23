@@ -1,6 +1,7 @@
+// Domain 模块只承载领域模型、仓库契约和用例，不依赖具体数据实现。
 plugins {
     alias(libs.plugins.android.library)
-    // kotlin-android intentionally not applied; AGP 9.0+ has built-in Kotlin support.
+    // AGP 9 已内置 Kotlin，不再重复应用 kotlin-android 插件。
 }
 
 android {

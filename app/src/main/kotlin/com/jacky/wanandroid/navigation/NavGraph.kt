@@ -2,15 +2,30 @@ package com.jacky.wanandroid.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.AccountTree
+import androidx.compose.material.icons.rounded.Explore
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.jacky.wanandroid.domain.model.Article
 import com.jacky.wanandroid.feature.auth.AuthScreen
@@ -23,35 +38,134 @@ import com.jacky.wanandroid.feature.project.ProjectScreen
 import com.jacky.wanandroid.feature.search.SearchScreen
 import com.jacky.wanandroid.feature.web.WebScreen
 
-private data class TopLevel(val label: String, val marker: String, val destination: Any, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+/** 底部导航项的显示信息与类型安全目的地。 */
+private data class TopLevel(
+    val label: String,
+    val marker: String,
+    val destination: Any,
+    val icon: ImageVector
+)
+
 private val topLevels = listOf(
-    TopLevel("首页", "Home", Home, Icons.Rounded.Home), TopLevel("体系", "Knowledge", Knowledge, Icons.Rounded.AccountTree),
-    TopLevel("导航", "Navigation", Navigation, Icons.Rounded.Explore), TopLevel("项目", "Projects", Projects, Icons.Rounded.Widgets),
+    TopLevel("首页", "Home", Home, Icons.Rounded.Home),
+    TopLevel("体系", "Knowledge", Knowledge, Icons.Rounded.AccountTree),
+    TopLevel("导航", "Navigation", Navigation, Icons.Rounded.Explore),
+    TopLevel("项目", "Projects", Projects, Icons.Rounded.Widgets),
     TopLevel("我的", "Profile", Profile, Icons.Rounded.Person)
 )
 
+/**
+ * 将接口返回的 HTML 标题转换为阅读器顶栏使用的纯文本。
+ *
+ * 正常路径使用 Compose HTML 解析器同步解码实体；解析异常时仍会剥离标签，
+ * 避免搜索高亮的 em 标签直接显示在 WebView 标题中。
+ */
 private fun String.toReaderTitle(): String = runCatching {
     AnnotatedString.fromHtml(this).text.trim()
 }.getOrElse {
     replace(Regex("<[^>]+>"), "").trim()
 }
 
-@Composable fun WanAndroidApp(navController: NavHostController = rememberNavController()) {
-    val entry by navController.currentBackStackEntryAsState(); val route = entry?.destination?.route.orEmpty()
-    val showBottom = topLevels.any { route.endsWith(".${it.marker}") || route == it.marker }
-    val openArticle: (Article) -> Unit = { navController.navigate(WebArticle(it.title.toReaderTitle(), it.link, it.id)) }
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, bottomBar = { if (showBottom) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) { topLevels.forEach { item ->
-        val selected = route.endsWith(".${item.marker}") || route == item.marker
-        NavigationBarItem(selected = selected, onClick = { navController.navigate(item.destination) { popUpTo(Home) { saveState = true }; launchSingleTop = true; restoreState = true } }, icon = { Icon(item.icon, contentDescription = null) }, label = { Text(item.label, style = MaterialTheme.typography.labelSmall) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer, selectedTextColor = MaterialTheme.colorScheme.onBackground, indicatorColor = MaterialTheme.colorScheme.primaryContainer, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant))
-    } } }) { padding -> NavHost(navController, startDestination = Home, modifier = Modifier.padding(padding)) {
-        composable<Home> { HomeScreen(onSearch = { navController.navigate(Search) }, onLogin = { navController.navigate(Auth) }, onOpenArticle = openArticle) }
-        composable<Knowledge> { KnowledgeScreen(openArticle) }
-        composable<Navigation> { NavigationScreen(openArticle) }
-        composable<Projects> { ProjectScreen(openArticle) }
-        composable<Profile> { ProfileScreen(onLogin = { navController.navigate(Auth) }, onCollections = { navController.navigate(Collections) }) }
-        composable<Search> { SearchScreen(navController::popBackStack, openArticle) }
-        composable<Auth> { AuthScreen(onBack = { navController.popBackStack() }, onSuccess = { navController.popBackStack() }) }
-        composable<Collections> { CollectionScreen(navController::popBackStack, { navController.navigate(Auth) }, openArticle) }
-        composable<WebArticle> { backStack -> val args = backStack.toRoute<WebArticle>(); WebScreen(args.title, args.url, navController::popBackStack) }
-    } }
+/** 应用导航根节点，集中连接各 Feature，Feature 之间不直接相互依赖。 */
+@Composable
+fun WanAndroidApp(navController: NavHostController = rememberNavController()) {
+    val entry by navController.currentBackStackEntryAsState()
+    val route = entry?.destination?.route.orEmpty()
+    val showBottom = topLevels.any {
+        route.endsWith(".${it.marker}") || route == it.marker
+    }
+
+    // 所有文章入口共用同一转换，保证阅读器路由始终收到纯文本标题。
+    val openArticle: (Article) -> Unit = {
+        navController.navigate(
+            WebArticle(it.title.toReaderTitle(), it.link, it.id)
+        )
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            if (showBottom) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
+                ) {
+                    topLevels.forEach { item ->
+                        val selected =
+                            route.endsWith(".${item.marker}") || route == item.marker
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(item.destination) {
+                                    popUpTo(Home) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(item.icon, contentDescription = null) },
+                            label = {
+                                Text(
+                                    item.label,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor =
+                                    MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                unselectedIconColor =
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor =
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = Home,
+            modifier = Modifier.padding(padding)
+        ) {
+            composable<Home> {
+                HomeScreen(
+                    onSearch = { navController.navigate(Search) },
+                    onLogin = { navController.navigate(Auth) },
+                    onOpenArticle = openArticle
+                )
+            }
+            composable<Knowledge> { KnowledgeScreen(openArticle) }
+            composable<Navigation> { NavigationScreen(openArticle) }
+            composable<Projects> { ProjectScreen(openArticle) }
+            composable<Profile> {
+                ProfileScreen(
+                    onLogin = { navController.navigate(Auth) },
+                    onCollections = { navController.navigate(Collections) }
+                )
+            }
+            composable<Search> {
+                SearchScreen(navController::popBackStack, openArticle)
+            }
+            composable<Auth> {
+                AuthScreen(
+                    onBack = { navController.popBackStack() },
+                    onSuccess = { navController.popBackStack() }
+                )
+            }
+            composable<Collections> {
+                CollectionScreen(
+                    onBack = navController::popBackStack,
+                    onLogin = { navController.navigate(Auth) },
+                    onOpenArticle = openArticle
+                )
+            }
+            composable<WebArticle> { backStack ->
+                val args = backStack.toRoute<WebArticle>()
+                WebScreen(args.title, args.url, navController::popBackStack)
+            }
+        }
+    }
 }

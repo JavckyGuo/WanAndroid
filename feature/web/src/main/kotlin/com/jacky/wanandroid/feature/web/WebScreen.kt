@@ -35,8 +35,10 @@ import com.jacky.wanandroid.core.designsystem.WanBackButton
 import com.jacky.wanandroid.core.designsystem.WanPageHeader
 import kotlinx.coroutines.delay
 
+/** 阅读器内可恢复的失败信息。 */
 private data class ReaderFailure(val title: String, val detail: String)
 
+/** 将明文 HTTP 链接优先升级为 HTTPS，其他格式保持原样交给校验层。 */
 internal fun normalizeReaderUrl(rawUrl: String): String {
     val trimmed = rawUrl.trim()
     return if (trimmed.startsWith("http://", ignoreCase = true)) {
@@ -44,8 +46,10 @@ internal fun normalizeReaderUrl(rawUrl: String): String {
     } else trimmed
 }
 
+/** 阅读器仅允许 HTTP(S)，避免 intent、file 等 Scheme 自动拉起外部能力。 */
 internal fun isWebUrl(rawUrl: String): Boolean = rawUrl.substringBefore(':', missingDelimiterValue = "").lowercase() in setOf("http", "https")
 
+/** 使用网站原始排版展示文章，并提供明确的加载、超时和失败反馈。 */
 @Composable
 fun WebScreen(title: String, url: String, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -83,6 +87,7 @@ fun WebScreen(title: String, url: String, onBack: () -> Unit) {
             .onFailure { failure = ReaderFailure("无法打开外部浏览器", it.message ?: "设备上没有可处理此链接的应用") }
     }
 
+    // 页面迟迟没有提交可见内容时给出提示，避免用户只看到无反馈的白屏。
     LaunchedEffect(loadAttempt, loading, contentVisible) {
         if (loading && !contentVisible) {
             delay(12_000)
@@ -121,7 +126,13 @@ fun WebScreen(title: String, url: String, onBack: () -> Unit) {
                                     clipboard.setPrimaryClip(ClipData.newPlainText("文章链接", currentUrl))
                                     menuExpanded = false
                                 })
-                                DropdownMenuItem(text = { Text("在浏览器中打开") }, onClick = { menuExpanded = false; openExternally() })
+                                DropdownMenuItem(
+                                    text = { Text("在浏览器中打开") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        openExternally()
+                                    },
+                                )
                             }
                         }
                     }
@@ -142,6 +153,7 @@ fun WebScreen(title: String, url: String, onBack: () -> Unit) {
                         settings.useWideViewPort = true
                         settings.loadWithOverviewMode = true
                         settings.cacheMode = WebSettings.LOAD_DEFAULT
+                        // 关闭本地文件、内容 URI、混合内容及多窗口，缩小第三方页面的能力边界。
                         settings.allowFileAccess = false
                         settings.allowContentAccess = false
                         settings.javaScriptCanOpenWindowsAutomatically = false
@@ -231,7 +243,18 @@ fun WebScreen(title: String, url: String, onBack: () -> Unit) {
 
             when {
                 failure != null -> ReaderMessage("LOAD ERROR", failure!!.title, failure!!.detail, "重新加载", ::retry, "浏览器打开", ::openExternally)
-                slowLoading && !contentVisible -> ReaderMessage("SLOW CONNECTION", "加载时间有点长", "目标网站响应较慢，你可以继续等待、重新加载，或交给系统浏览器打开。", "继续等待", { slowLoading = false; contentVisible = true }, "浏览器打开", ::openExternally)
+                slowLoading && !contentVisible -> ReaderMessage(
+                    "SLOW CONNECTION",
+                    "加载时间有点长",
+                    "目标网站响应较慢，你可以继续等待、重新加载，或交给系统浏览器打开。",
+                    "继续等待",
+                    {
+                        slowLoading = false
+                        contentVisible = true
+                    },
+                    "浏览器打开",
+                    ::openExternally,
+                )
                 loading && !contentVisible -> ReaderLoading(Uri.parse(currentUrl).host.orEmpty())
             }
         }
@@ -245,7 +268,14 @@ private fun ReaderLoading(host: String) {
             Text("CONNECTING", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(10.dp))
             Text("正在打开文章", style = MaterialTheme.typography.headlineMedium)
-            if (host.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(host, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            if (host.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    host,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Spacer(Modifier.height(22.dp))
             LinearProgressIndicator(Modifier.fillMaxWidth())
         }

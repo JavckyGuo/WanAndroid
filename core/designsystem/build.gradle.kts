@@ -1,3 +1,4 @@
+// Design System 集中维护 Material 3 色板、排版和跨页面共享组件。
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)

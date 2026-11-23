@@ -1,3 +1,4 @@
+// 统一插件与依赖仓库，并在此登记应用、分层和业务模块。
 pluginManagement {
     repositories {
         maven("https://maven.aliyun.com/repository/google")

@@ -13,6 +13,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+/** 创建 Room 数据库及其 DAO，生命周期与应用进程一致。 */
 object DatabaseModule {
 
     @Provides
@@ -21,5 +22,6 @@ object DatabaseModule {
         Room.databaseBuilder(context, AppDatabase::class.java, "wanandroid_db")
             .build()
 
-    @Provides fun provideCacheDao(db: AppDatabase): CacheDao = db.cacheDao()
+    @Provides
+    fun provideCacheDao(db: AppDatabase): CacheDao = db.cacheDao()
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- INTERNET is required by Firebase and any remote API; harmless if unused. -->
+    <!-- 网络权限用于访问 WanAndroid API 与文章网页。 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:name=".WanAndroidApplication"

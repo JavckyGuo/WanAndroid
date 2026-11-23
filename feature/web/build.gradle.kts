@@ -1,8 +1,17 @@
-plugins { alias(libs.plugins.android.library); alias(libs.plugins.kotlin.compose) }
+// 阅读器 Feature 使用受限 WebView 保留原站排版并处理加载失败。
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.compose)
+}
 android {
-    namespace = "com.jacky.wanandroid.feature.web"; compileSdk = 37
-    defaultConfig { minSdk = 24 }; buildFeatures { compose = true }
-    compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+    namespace = "com.jacky.wanandroid.feature.web"
+    compileSdk = 37
+    defaultConfig { minSdk = 24 }
+    buildFeatures { compose = true }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 }
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 dependencies {

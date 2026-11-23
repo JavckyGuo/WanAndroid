@@ -12,7 +12,11 @@ import com.jacky.wanandroid.ui.theme.WanAndroidTheme
 import com.jacky.wanandroid.ui.theme.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
-@AndroidEntryPoint class MainActivity : ComponentActivity() {
+/**
+ * 应用唯一 Activity，负责安装 Compose 根节点并持续应用全局主题偏好。
+ */
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
     private val themeViewModel: ThemeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,7 +24,9 @@ import dagger.hilt.android.AndroidEntryPoint
         enableEdgeToEdge()
         setContent {
             val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
-            WanAndroidTheme(themeMode = themeMode) { WanAndroidApp() }
+            WanAndroidTheme(themeMode = themeMode) {
+                WanAndroidApp()
+            }
         }
     }
 }

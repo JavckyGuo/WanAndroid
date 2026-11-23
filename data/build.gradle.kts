@@ -1,6 +1,7 @@
+// Data 模块实现网络、Room、DataStore、Cookie 与领域仓库接口。
 plugins {
     alias(libs.plugins.android.library)
-    // kotlin-android intentionally not applied; AGP 9.0+ has built-in Kotlin support.
+    // AGP 9 已内置 Kotlin，不再重复应用 kotlin-android 插件。
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -22,6 +23,7 @@ kotlin {
 }
 
 ksp {
+    // 将 Room Schema 固定输出到版本库目录，用于迁移审查和测试。
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
